@@ -1,0 +1,34 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:        # 允许在 Actions 页面手动触发
+  push:
+    tags: ['v*']            # 打 v 开头的 tag 时自动构建
+
+jobs:
+  macos:
+    runs-on: macos-latest   # Apple Silicon (M 系列)；如需 Intel Mac 用 macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      # 安装 Qt（aqtinstall 后端，版本与本地开发保持一致）
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.1'
+          # macOS 的 Qt 官方包为通用二进制（x86_64 + arm64），无需指定 arch
+
+      - name: Configure & Build (Release)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+
+      # macdeployqt 收集 Qt/FFmpeg 依赖进 .app 并生成 DMG
+      - name: Package DMG
+        run: macdeployqt build/appp1.app -qmldir=qml -dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPlayer-macOS
+          path: build/appp1.dmg
+          retention-days: 14
