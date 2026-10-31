@@ -1,14 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import p1
 
 Rectangle {
     id: shell
     color: Theme.bgPrimary   // 浅色内容背景
 
     Component.onCompleted: {
-        // If no scanned folder yet, go to DiscoverPage
-        contentStack.push(discoverPage)
+        contentStack.push(playlistPage)
     }
 
     // 扫描完成后自动切换到播放列表页，让用户立刻看到结果
@@ -68,16 +68,12 @@ Rectangle {
     }
 
     // ── Page References ──
-    Component { id: discoverPage; DiscoverPage {} }
     Component { id: playlistPage; PlaylistView {} }
 
     // ── API for Sidebar ──
     function goToPage(name) {
-        if (name === "discover") {
-            contentStack.replace(discoverPage)
-        } else if (name === "playlist") {
+        if (name === "playlist")
             contentStack.replace(playlistPage)
-        }
     }
 
     function showFullPlayer() {

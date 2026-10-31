@@ -47,7 +47,6 @@ qt_add_qml_module(appp1
         qml/NowPlayingBar.qml
         qml/FullPlayerPage.qml
         qml/Theme.qml
-        qml/pages/DiscoverPage.qml
         qml/components/GlassPanel.qml
         qml/components/AlbumArt.qml
         qml/components/VinylAnimation.qml

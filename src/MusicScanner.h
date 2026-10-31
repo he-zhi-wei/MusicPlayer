@@ -39,6 +39,7 @@ signals:
 private slots:
     void probeNext();                                        // 读取下一首的元数据
     void onProbeStatusChanged(QMediaPlayer::MediaStatus status);
+    void onProbeDurationChanged(qint64 duration);
     void onProbeTimeout();
 
 private:
@@ -56,6 +57,7 @@ private:
     QMediaPlayer *m_probe = nullptr;
     QAudioOutput *m_probeOutput = nullptr;
     QTimer       *m_probeTimeout = nullptr;
+    QTimer       *m_settle = nullptr;   // 加载完成后等待时长解析的短暂缓冲
     QList<MusicInfo> m_pending;        // 待探测
     QList<MusicInfo> m_results;        // 探测完成的结果
     MusicInfo m_currentProbe;          // 正在探测的曲目

@@ -40,10 +40,10 @@ public:
     QString positionString() const;
     QString durationString() const;
 
+public slots:
+    // 属性 setter 同时声明为槽，QML 才能用 Audio.setVolume(x) 这种形式调用
     void setVolume(qreal v);
     void setMuted(bool m);
-
-public slots:
     void play();
     void pause();
     void togglePlayPause();

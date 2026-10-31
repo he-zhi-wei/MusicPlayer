@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import p1
 
 Rectangle {
     id: sidebar
@@ -49,13 +50,9 @@ Rectangle {
             spacing: 4
 
             NavButton {
-                text: "🎵  发现音乐"
-                onClicked: panel.goToPage("discover")
-                active: true
-            }
-            NavButton {
                 text: "📋  播放列表"
                 onClicked: panel.goToPage("playlist")
+                active: true
             }
         }
 

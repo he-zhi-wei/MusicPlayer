@@ -27,10 +27,19 @@ MusicScanner::MusicScanner(QObject *parent)
     m_probeTimeout->setSingleShot(true);
     m_probeTimeout->setInterval(3000);   // 单个文件最多等待 3 秒
 
+    // FFmpeg 后端在 LoadedMedia 之后才异步填充 duration，留一点缓冲再读取
+    m_settle = new QTimer(this);
+    m_settle->setSingleShot(true);
+    m_settle->setInterval(120);
+
     connect(m_probe, &QMediaPlayer::mediaStatusChanged,
             this, &MusicScanner::onProbeStatusChanged);
+    connect(m_probe, &QMediaPlayer::durationChanged,
+            this, &MusicScanner::onProbeDurationChanged);
     connect(m_probeTimeout, &QTimer::timeout,
             this, &MusicScanner::onProbeTimeout);
+    connect(m_settle, &QTimer::timeout,
+            this, &MusicScanner::finishCurrentProbe);
     connect(m_probe, &QMediaPlayer::errorOccurred, this,
             [this](QMediaPlayer::Error, const QString &msg) {
                 if (!m_scanning) return;
@@ -116,6 +125,11 @@ void MusicScanner::onProbeStatusChanged(QMediaPlayer::MediaStatus status)
 
     switch (status) {
     case QMediaPlayer::LoadedMedia:
+        if (m_probe->duration() > 0)
+            finishCurrentProbe();
+        else
+            m_settle->start();     // 等 durationChanged 或 120ms 兜底
+        break;
     case QMediaPlayer::BufferedMedia:
     case QMediaPlayer::InvalidMedia:
     case QMediaPlayer::NoMedia:
@@ -124,6 +138,14 @@ void MusicScanner::onProbeStatusChanged(QMediaPlayer::MediaStatus status)
     default:
         break;
     }
+}
+
+void MusicScanner::onProbeDurationChanged(qint64 duration)
+{
+    if (!m_scanning || m_probeAdvancing) return;
+    if (duration <= 0) return;
+    if (m_probe->mediaStatus() == QMediaPlayer::LoadedMedia)
+        finishCurrentProbe();
 }
 
 void MusicScanner::onProbeTimeout()
