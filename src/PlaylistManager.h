@@ -61,6 +61,8 @@ signals:
 private:
     void reshuffleOrder();
     int  effectiveIndex() const;
+    void saveToDisk() const;
+    void restoreFromDisk();
 
     QList<MusicInfo> m_playlist;
     QList<int>       m_shuffleOrder;

@@ -1,6 +1,7 @@
 #include "AudioPlayer.h"
 #include <QUrl>
 #include <QDebug>
+#include <QSettings>
 
 AudioPlayer::AudioPlayer(QObject *parent)
     : QObject(parent)
@@ -8,7 +9,8 @@ AudioPlayer::AudioPlayer(QObject *parent)
     , m_audioOutput(new QAudioOutput(this))
 {
     m_player->setAudioOutput(m_audioOutput);
-    m_audioOutput->setVolume(0.7);
+    // 恢复上次的音量
+    m_audioOutput->setVolume(QSettings().value("audio/volume", 0.7).toReal());
 
     connect(m_player, &QMediaPlayer::playbackStateChanged,
             this, &AudioPlayer::onPlaybackStateChanged);
@@ -51,6 +53,7 @@ void AudioPlayer::setVolume(qreal v) {
     v = qBound(0.0, v, 1.0);
     if (!qFuzzyCompare(static_cast<double>(m_audioOutput->volume()), static_cast<double>(v))) {
         m_audioOutput->setVolume(v);
+        QSettings().setValue("audio/volume", v);
         emit volumeChanged();
     }
 }
@@ -91,14 +94,29 @@ void AudioPlayer::toggleMute() {
 
 void AudioPlayer::loadTrack(const MusicInfo &track) {
     m_currentTrack = track;
+    m_pendingSeek = -1;   // 正常播放不恢复旧进度
     m_player->setSource(QUrl::fromLocalFile(track.filePath));
     m_player->play();
+    emit currentTrackChanged();
+}
+
+void AudioPlayer::restoreTrack(const MusicInfo &track, qint64 positionMs) {
+    m_currentTrack = track;
+    m_pendingSeek = qMax<qint64>(0, positionMs);
+    m_player->setSource(QUrl::fromLocalFile(track.filePath));
     emit currentTrackChanged();
 }
 
 // ---- internal slots ----
 
 void AudioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
+    // 恢复上次进度：媒体加载完成后再跳转，并保持暂停状态
+    if (status == QMediaPlayer::LoadedMedia && m_pendingSeek >= 0) {
+        m_player->setPosition(m_pendingSeek);
+        m_player->pause();
+        m_pendingSeek = -1;
+        return;
+    }
     if (status == QMediaPlayer::EndOfMedia) {
         emit trackEnded();
     }

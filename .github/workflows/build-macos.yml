@@ -5,23 +5,40 @@ on:
   push:
     tags: ['v*']            # 打 v 开头的 tag 时自动构建
 
+# 一次构建同时产出两个 DMG，分别面向不同最低 macOS 版本
 jobs:
   macos:
-    runs-on: macos-latest   # Apple Silicon (M 系列)；如需 Intel Mac 用 macos-13
+    strategy:
+      fail-fast: false      # 一个矩阵项失败不影响另一个
+      matrix:
+        include:
+          # 兼容 macOS 10.15（Catalina）及以上：必须用支持 10.15 的最后一个 Qt 6.4.3
+          - name: macos-10.15
+            qt_version: '6.4.3'
+            runner: macos-13          # Intel runner，Xcode 14，可设最低到 10.15
+            deployment_target: '10.15'
+          # 最新版：Qt 6.11.1，最低 macOS 12.0（与本地开发环境一致）
+          - name: macos-12
+            qt_version: '6.11.1'
+            runner: macos-latest      # Apple Silicon runner
+            deployment_target: '12.0'
+    runs-on: ${{ matrix.runner }}
+    name: ${{ matrix.name }}
+
     steps:
       - uses: actions/checkout@v4
 
-      # 安装 Qt（aqtinstall 后端，版本与本地开发保持一致）
+      # 安装对应版本的 Qt
       - uses: jurplel/install-qt-action@v4
         with:
-          version: '6.11.1'
+          version: ${{ matrix.qt_version }}
           # 默认只装基础模块，Multimedia（音频播放）需显式声明
           modules: 'qtmultimedia'
-          # macOS 的 Qt 官方包为通用二进制（x86_64 + arm64），无需指定 arch
 
       - name: Configure & Build (Release)
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
           cmake --build build --parallel
 
       # macdeployqt 收集 Qt/FFmpeg 依赖进 .app 并生成 DMG
@@ -31,6 +48,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MusicPlayer-macOS
+          name: MusicPlayer-${{ matrix.name }}
           path: build/appp1.dmg
           retention-days: 14

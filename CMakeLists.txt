@@ -15,16 +15,19 @@ find_package(Qt6 REQUIRED COMPONENTS
     Widgets
 )
 
-qt_standard_project_setup(REQUIRES 6.5)
+qt_standard_project_setup(REQUIRES 6.4)
 
-# 为 QML 子目录（qml/components、qml/pages）自动生成 qmldir，消除 QTP0004 警告
-qt_policy(SET QTP0004 NEW)
+# QTP0004 是 Qt 6.5 引入的政策，6.4 下设置会报错，故按版本区分
+if(QT_VERSION VERSION_GREATER_EQUAL 6.5)
+    qt_policy(SET QTP0004 NEW)
+endif()
 
 qt_add_executable(appp1
     main.cpp
     src/AudioPlayer.cpp
     src/PlaylistManager.cpp
     src/MusicScanner.cpp
+    src/AppSettings.cpp
 )
 
 # Must be set BEFORE qt_add_qml_module for singleton registration to work
@@ -58,6 +61,7 @@ qt_add_qml_module(appp1
         src/AudioPlayer.h
         src/PlaylistManager.h
         src/MusicScanner.h
+        src/AppSettings.h
 )
 
 target_link_libraries(appp1 PRIVATE

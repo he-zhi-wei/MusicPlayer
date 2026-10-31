@@ -1,13 +1,17 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 
 Rectangle {
     id: fullPlayer
-    color: "#e6f5f5f7"          // 浅色全屏播放页遮罩底
+    color: Theme.bgPrimary
     opacity: 0
 
     property bool active: false
+    // 当前曲目的封面（用于虚化背景与唱片封面）
+    readonly property string coverUrl: (Audio.currentTrack && Audio.currentTrack.coverArtPath)
+                                       ? Audio.currentTrack.coverArtPath : ""
 
     function open() {
         active = true
@@ -23,10 +27,33 @@ Rectangle {
         NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic }
     }
 
-    // ── Background Tint ──
+    // ── 封面虚化背景（Apple Music 风格） ──
+    Image {
+        id: coverBg
+        anchors.fill: parent
+        anchors.margins: -32          // 超出边界，避免虚化后露出透明边
+        source: fullPlayer.coverUrl
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        visible: false
+    }
+
+    MultiEffect {
+        anchors.fill: parent
+        source: coverBg
+        visible: fullPlayer.coverUrl !== ""
+        blurEnabled: true
+        blurMax: 64
+        blur: 0.95
+        saturation: 1.6
+        brightness: 0.32
+    }
+
+    // 白色柔化层：保证浅色主题下文字对比度
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(245/255, 245/255, 247/255, 0.98)   // 云白近不透明背景
+        color: Qt.rgba(245/255, 245/255, 247/255,
+                       fullPlayer.coverUrl !== "" ? 0.58 : 0.98)
     }
 
     // ── Close Button ──

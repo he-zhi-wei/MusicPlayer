@@ -30,6 +30,12 @@ RowLayout {
 
         Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
+        // 点击回弹 / 悬停微放大
+        scale: playBtnHover.pressed ? 0.90 : (playBtnHover.hovered ? 1.06 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic }
+        }
+
         Text {
             anchors.centerIn: parent
             text: Audio.playbackState === 1 ? "⏸" : "▶"

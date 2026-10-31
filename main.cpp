@@ -3,9 +3,11 @@
 #include <QQmlContext>
 #include <QIcon>
 #include <QQuickStyle>
+#include <QSettings>
 #include "src/AudioPlayer.h"
 #include "src/PlaylistManager.h"
 #include "src/MusicScanner.h"
+#include "src/AppSettings.h"
 #include "src/MusicInfo.h"
 
 int main(int argc, char *argv[])
@@ -28,6 +30,7 @@ int main(int argc, char *argv[])
     auto *audioPlayer  = new AudioPlayer(&app);
     auto *playlistMgr  = new PlaylistManager(&app);
     auto *musicScanner = new MusicScanner(&app);
+    auto *appSettings  = new AppSettings(&app);
 
     // Wire: PlaylistManager → AudioPlayer
     QObject::connect(playlistMgr, &PlaylistManager::trackRequested,
@@ -41,10 +44,24 @@ int main(int argc, char *argv[])
     QObject::connect(musicScanner, &MusicScanner::tracksFound,
                      playlistMgr, &PlaylistManager::addTracks);
 
+    // 恢复上次播放的曲目与进度（只加载，不自动播放）
+    if (playlistMgr->trackCount() > 0 && playlistMgr->currentIndex() >= 0) {
+        audioPlayer->restoreTrack(
+            playlistMgr->currentTrack(),
+            QSettings().value("playback/position", 0).toLongLong());
+    }
+
     // Expose to QML
     engine.rootContext()->setContextProperty("Audio",   audioPlayer);
     engine.rootContext()->setContextProperty("Playlist", playlistMgr);
     engine.rootContext()->setContextProperty("Scanner",  musicScanner);
+    engine.rootContext()->setContextProperty("Settings", appSettings);
+
+    // 退出时保存播放进度
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, [audioPlayer, appSettings]() {
+        QSettings().setValue("playback/position", audioPlayer->position());
+        appSettings->sync();
+    });
 
     engine.loadFromModule("p1", "Main");
 

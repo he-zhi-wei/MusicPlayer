@@ -36,21 +36,12 @@ Rectangle {
             }
         }
 
-        // Cover thumbnail placeholder
-        Rectangle {
+        // 封面缩略图（有内嵌封面时显示真实图片）
+        AlbumArt {
             Layout.preferredWidth: 36
             Layout.preferredHeight: 36
-            radius: 4
-            color: Theme.bgHover
-            border.color: Theme.borderColor
-            border.width: 0.5
-
-            Text {
-                anchors.centerIn: parent
-                text: "♪"
-                color: Theme.textMuted
-                font.pixelSize: 16
-            }
+            size: 36
+            coverPath: track.coverArtPath || ""
         }
 
         // Title + Artist

@@ -1,11 +1,66 @@
 #include "PlaylistManager.h"
 #include <algorithm>
 #include <QDebug>
+#include <QSettings>
+#include <QVariantMap>
 
 PlaylistManager::PlaylistManager(QObject *parent)
     : QObject(parent)
     , m_rng(QRandomGenerator::securelySeeded())
 {
+    restoreFromDisk();   // 恢复上次的播放列表
+
+    // 列表或当前曲目变化时写盘（QSettings 内部缓冲，开销很小）
+    connect(this, &PlaylistManager::playlistChanged, this, [this] { saveToDisk(); });
+    connect(this, &PlaylistManager::currentIndexChanged, this, [this] { saveToDisk(); });
+}
+
+// ── 持久化 ──
+
+void PlaylistManager::saveToDisk() const
+{
+    QSettings settings;
+    QVariantList list;
+    list.reserve(m_playlist.size());
+    for (const auto &t : m_playlist) {
+        QVariantMap map;
+        map["id"] = t.id;
+        map["title"] = t.title;
+        map["artist"] = t.artist;
+        map["album"] = t.album;
+        map["durationMs"] = t.durationMs;
+        map["filePath"] = t.filePath;
+        map["coverArtPath"] = t.coverArtPath;
+        list.append(map);
+    }
+    settings.setValue("playlist/tracks", list);
+    settings.setValue("playlist/currentIndex", m_currentIndex);
+}
+
+void PlaylistManager::restoreFromDisk()
+{
+    QSettings settings;
+    const QVariantList list = settings.value("playlist/tracks").toList();
+
+    for (const QVariant &v : list) {
+        const QVariantMap map = v.toMap();
+        MusicInfo track;
+        track.id = map.value("id", -1).toInt();
+        track.title = map.value("title").toString();
+        track.artist = map.value("artist").toString();
+        track.album = map.value("album").toString();
+        track.durationMs = map.value("durationMs").toLongLong();
+        track.filePath = map.value("filePath").toString();
+        track.coverArtPath = map.value("coverArtPath").toString();
+        if (!track.filePath.isEmpty())
+            m_playlist.append(track);
+    }
+
+    reshuffleOrder();
+
+    const int savedIndex = settings.value("playlist/currentIndex", -1).toInt();
+    if (savedIndex >= 0 && savedIndex < m_playlist.size())
+        m_currentIndex = savedIndex;
 }
 
 // ── Properties ──

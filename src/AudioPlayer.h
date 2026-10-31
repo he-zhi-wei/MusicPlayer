@@ -53,6 +53,8 @@ public slots:
     void previous();
     void toggleMute();
     void loadTrack(const MusicInfo &track);
+    // 恢复到上次的曲目与进度，但不自动播放
+    void restoreTrack(const MusicInfo &track, qint64 positionMs);
 
 signals:
     void playbackStateChanged();
@@ -77,6 +79,7 @@ private:
     QMediaPlayer *m_player;
     QAudioOutput *m_audioOutput;
     MusicInfo m_currentTrack;
+    qint64 m_pendingSeek = -1;   // 等待媒体加载完成后跳转的位置（毫秒）
 
     static QString formatMs(qint64 ms);
 };

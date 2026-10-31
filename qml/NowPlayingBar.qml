@@ -17,6 +17,8 @@ Rectangle {
         // ── Album Art ──
         AlbumArt {
             size: 48
+            coverPath: Audio.currentTrack && Audio.currentTrack.coverArtPath
+                       ? Audio.currentTrack.coverArtPath : ""
             onClicked: {
                 // Notify parent to show full player
                 var p = bar.parent
