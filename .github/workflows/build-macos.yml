@@ -15,6 +15,8 @@ jobs:
       - uses: jurplel/install-qt-action@v4
         with:
           version: '6.11.1'
+          # 默认只装基础模块，Multimedia（音频播放）需显式声明
+          modules: 'qtmultimedia'
           # macOS 的 Qt 官方包为通用二进制（x86_64 + arm64），无需指定 arch
 
       - name: Configure & Build (Release)
